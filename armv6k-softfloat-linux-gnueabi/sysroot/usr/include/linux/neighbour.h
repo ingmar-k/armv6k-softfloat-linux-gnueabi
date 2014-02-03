@@ -4,8 +4,7 @@
 #include <linux/types.h>
 #include <linux/netlink.h>
 
-struct ndmsg
-{
+struct ndmsg {
 	__u8		ndm_family;
 	__u8		ndm_pad1;
 	__u16		ndm_pad2;
@@ -15,13 +14,16 @@ struct ndmsg
 	__u8		ndm_type;
 };
 
-enum
-{
+enum {
 	NDA_UNSPEC,
 	NDA_DST,
 	NDA_LLADDR,
 	NDA_CACHEINFO,
 	NDA_PROBES,
+	NDA_VLAN,
+	NDA_PORT,
+	NDA_VNI,
+	NDA_IFINDEX,
 	__NDA_MAX
 };
 
@@ -34,6 +36,9 @@ enum
 #define NTF_USE		0x01
 #define NTF_PROXY	0x08	/* == ATF_PUBL */
 #define NTF_ROUTER	0x80
+
+#define NTF_SELF	0x02
+#define NTF_MASTER	0x04
 
 /*
  *	Neighbor Cache Entry States.
@@ -56,8 +61,7 @@ enum
    NUD_PERMANENT is also cannot be deleted by garbage collectors.
  */
 
-struct nda_cacheinfo
-{
+struct nda_cacheinfo {
 	__u32		ndm_confirmed;
 	__u32		ndm_used;
 	__u32		ndm_updated;
@@ -89,8 +93,7 @@ struct nda_cacheinfo
  * device.
  ****/
 
-struct ndt_stats
-{
+struct ndt_stats {
 	__u64		ndts_allocs;
 	__u64		ndts_destroys;
 	__u64		ndts_hash_grows;
@@ -120,19 +123,18 @@ enum {
 	NDTPA_PROXY_DELAY,		/* u64, msecs */
 	NDTPA_PROXY_QLEN,		/* u32 */
 	NDTPA_LOCKTIME,			/* u64, msecs */
+	NDTPA_QUEUE_LENBYTES,		/* u32 */
 	__NDTPA_MAX
 };
 #define NDTPA_MAX (__NDTPA_MAX - 1)
 
-struct ndtmsg
-{
+struct ndtmsg {
 	__u8		ndtm_family;
 	__u8		ndtm_pad1;
 	__u16		ndtm_pad2;
 };
 
-struct ndt_config
-{
+struct ndt_config {
 	__u16		ndtc_key_len;
 	__u16		ndtc_entry_size;
 	__u32		ndtc_entries;

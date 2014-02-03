@@ -47,6 +47,8 @@ GLIBC_PRIVATE {
     _nss_files_getsgnam_r;
     _nss_files_getspent_r;
     _nss_files_getspnam_r;
+    _nss_files_init;
+    _nss_files_initgroups_dyn;
     _nss_files_parse_etherent;
     _nss_files_parse_netent;
     _nss_files_parse_protoent;

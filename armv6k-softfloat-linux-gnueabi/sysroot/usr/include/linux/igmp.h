@@ -27,8 +27,7 @@
  *	Header in on cable format
  */
 
-struct igmphdr
-{
+struct igmphdr {
 	__u8 type;
 	__u8 code;		/* For newer IGMP */
 	__sum16 csum;
@@ -86,9 +85,9 @@ struct igmpv3_query {
 #define IGMP_DVMRP			0x13	/* DVMRP routing */
 #define IGMP_PIM			0x14	/* PIM routing */
 #define IGMP_TRACE			0x15
-#define IGMPV2_HOST_MEMBERSHIP_REPORT	0x16	/* V2 version of 0x11 */
+#define IGMPV2_HOST_MEMBERSHIP_REPORT	0x16	/* V2 version of 0x12 */
 #define IGMP_HOST_LEAVE_MESSAGE 	0x17
-#define IGMPV3_HOST_MEMBERSHIP_REPORT	0x22	/* V3 version of 0x11 */
+#define IGMPV3_HOST_MEMBERSHIP_REPORT	0x22	/* V3 version of 0x12 */
 
 #define IGMP_MTRACE_RESP		0x1e
 #define IGMP_MTRACE			0x1f
@@ -126,4 +125,4 @@ struct igmpv3_query {
  * struct for keeping the multicast list in
  */
 
-#endif
+#endif /* _LINUX_IGMP_H */

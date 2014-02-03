@@ -19,6 +19,13 @@
  */
 #define IP_VS_SVC_F_PERSISTENT	0x0001		/* persistent port */
 #define IP_VS_SVC_F_HASHED	0x0002		/* hashed entry */
+#define IP_VS_SVC_F_ONEPACKET	0x0004		/* one-packet scheduling */
+#define IP_VS_SVC_F_SCHED1	0x0008		/* scheduler flag 1 */
+#define IP_VS_SVC_F_SCHED2	0x0010		/* scheduler flag 2 */
+#define IP_VS_SVC_F_SCHED3	0x0020		/* scheduler flag 3 */
+
+#define IP_VS_SVC_F_SCHED_SH_FALLBACK	IP_VS_SVC_F_SCHED1 /* SH fallback */
+#define IP_VS_SVC_F_SCHED_SH_PORT	IP_VS_SVC_F_SCHED2 /* SH use port */
 
 /*
  *      Destination Server Flags
@@ -69,6 +76,7 @@
 
 /*
  *      IPVS Connection Flags
+ *      Only flags 0..15 are sent to backup server
  */
 #define IP_VS_CONN_F_FWD_MASK	0x0007		/* mask for the fwd methods */
 #define IP_VS_CONN_F_MASQ	0x0000		/* masquerading/NAT */
@@ -85,10 +93,35 @@
 #define IP_VS_CONN_F_SEQ_MASK	0x0600		/* in/out sequence mask */
 #define IP_VS_CONN_F_NO_CPORT	0x0800		/* no client port set yet */
 #define IP_VS_CONN_F_TEMPLATE	0x1000		/* template, not connection */
+#define IP_VS_CONN_F_ONE_PACKET	0x2000		/* forward only one packet */
+
+/* Initial bits allowed in backup server */
+#define IP_VS_CONN_F_BACKUP_MASK (IP_VS_CONN_F_FWD_MASK | \
+				  IP_VS_CONN_F_NOOUTPUT | \
+				  IP_VS_CONN_F_INACTIVE | \
+				  IP_VS_CONN_F_SEQ_MASK | \
+				  IP_VS_CONN_F_NO_CPORT | \
+				  IP_VS_CONN_F_TEMPLATE \
+				 )
+
+/* Bits allowed to update in backup server */
+#define IP_VS_CONN_F_BACKUP_UPD_MASK (IP_VS_CONN_F_INACTIVE | \
+				      IP_VS_CONN_F_SEQ_MASK)
+
+/* Flags that are not sent to backup server start from bit 16 */
+#define IP_VS_CONN_F_NFCT	(1 << 16)	/* use netfilter conntrack */
+
+/* Connection flags from destination that can be changed by user space */
+#define IP_VS_CONN_F_DEST_MASK (IP_VS_CONN_F_FWD_MASK | \
+				IP_VS_CONN_F_ONE_PACKET | \
+				IP_VS_CONN_F_NFCT | \
+				0)
 
 #define IP_VS_SCHEDNAME_MAXLEN	16
+#define IP_VS_PENAME_MAXLEN	16
 #define IP_VS_IFNAME_MAXLEN	16
 
+#define IP_VS_PEDATA_MAXLEN     255
 
 /*
  *	The struct ip_vs_service_user and struct ip_vs_dest_user are
@@ -103,8 +136,8 @@ struct ip_vs_service_user {
 
 	/* virtual service options */
 	char			sched_name[IP_VS_SCHEDNAME_MAXLEN];
-	unsigned		flags;		/* virtual service flags */
-	unsigned		timeout;	/* persistent timeout in sec */
+	unsigned int		flags;		/* virtual service flags */
+	unsigned int		timeout;	/* persistent timeout in sec */
 	__be32			netmask;	/* persistent netmask */
 };
 
@@ -115,7 +148,7 @@ struct ip_vs_dest_user {
 	__be16			port;
 
 	/* real server options */
-	unsigned		conn_flags;	/* connection flags */
+	unsigned int		conn_flags;	/* connection flags */
 	int			weight;		/* destination weight */
 
 	/* thresholds for active connections */
@@ -127,8 +160,7 @@ struct ip_vs_dest_user {
 /*
  *	IPVS statistics object (for user space)
  */
-struct ip_vs_stats_user
-{
+struct ip_vs_stats_user {
 	__u32                   conns;          /* connections scheduled */
 	__u32                   inpkts;         /* incoming packets */
 	__u32                   outpkts;        /* outgoing packets */
@@ -166,8 +198,8 @@ struct ip_vs_service_entry {
 
 	/* service options */
 	char			sched_name[IP_VS_SCHEDNAME_MAXLEN];
-	unsigned		flags;          /* virtual service flags */
-	unsigned		timeout;	/* persistent timeout */
+	unsigned int		flags;          /* virtual service flags */
+	unsigned int		timeout;	/* persistent timeout */
 	__be32			netmask;	/* persistent netmask */
 
 	/* number of real servers */
@@ -181,7 +213,7 @@ struct ip_vs_service_entry {
 struct ip_vs_dest_entry {
 	__be32			addr;		/* destination address */
 	__be16			port;
-	unsigned		conn_flags;	/* connection flags */
+	unsigned int		conn_flags;	/* connection flags */
 	int			weight;		/* destination weight */
 
 	__u32		u_threshold;	/* upper threshold */
@@ -254,8 +286,8 @@ struct ip_vs_daemon_user {
 #define IPVS_GENL_VERSION	0x1
 
 struct ip_vs_flags {
-	__be32 flags;
-	__be32 mask;
+	__u32 flags;
+	__u32 mask;
 };
 
 /* Generic Netlink command attributes */
@@ -323,6 +355,9 @@ enum {
 	IPVS_SVC_ATTR_NETMASK,		/* persistent netmask */
 
 	IPVS_SVC_ATTR_STATS,		/* nested attribute for service stats */
+
+	IPVS_SVC_ATTR_PE_NAME,		/* name of ct retriever */
+
 	__IPVS_SVC_ATTR_MAX,
 };
 

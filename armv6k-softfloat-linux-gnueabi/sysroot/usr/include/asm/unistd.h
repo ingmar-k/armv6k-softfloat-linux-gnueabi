@@ -360,8 +360,8 @@
 #define __NR_readlinkat			(__NR_SYSCALL_BASE+332)
 #define __NR_fchmodat			(__NR_SYSCALL_BASE+333)
 #define __NR_faccessat			(__NR_SYSCALL_BASE+334)
-					/* 335 for pselect6 */
-					/* 336 for ppoll */
+#define __NR_pselect6			(__NR_SYSCALL_BASE+335)
+#define __NR_ppoll			(__NR_SYSCALL_BASE+336)
 #define __NR_unshare			(__NR_SYSCALL_BASE+337)
 #define __NR_set_robust_list		(__NR_SYSCALL_BASE+338)
 #define __NR_get_robust_list		(__NR_SYSCALL_BASE+339)
@@ -372,7 +372,7 @@
 #define __NR_vmsplice			(__NR_SYSCALL_BASE+343)
 #define __NR_move_pages			(__NR_SYSCALL_BASE+344)
 #define __NR_getcpu			(__NR_SYSCALL_BASE+345)
-					/* 346 for epoll_pwait */
+#define __NR_epoll_pwait		(__NR_SYSCALL_BASE+346)
 #define __NR_kexec_load			(__NR_SYSCALL_BASE+347)
 #define __NR_utimensat			(__NR_SYSCALL_BASE+348)
 #define __NR_signalfd			(__NR_SYSCALL_BASE+349)
@@ -390,7 +390,27 @@
 #define __NR_preadv			(__NR_SYSCALL_BASE+361)
 #define __NR_pwritev			(__NR_SYSCALL_BASE+362)
 #define __NR_rt_tgsigqueueinfo		(__NR_SYSCALL_BASE+363)
-#define __NR_perf_counter_open		(__NR_SYSCALL_BASE+364)
+#define __NR_perf_event_open		(__NR_SYSCALL_BASE+364)
+#define __NR_recvmmsg			(__NR_SYSCALL_BASE+365)
+#define __NR_accept4			(__NR_SYSCALL_BASE+366)
+#define __NR_fanotify_init		(__NR_SYSCALL_BASE+367)
+#define __NR_fanotify_mark		(__NR_SYSCALL_BASE+368)
+#define __NR_prlimit64			(__NR_SYSCALL_BASE+369)
+#define __NR_name_to_handle_at		(__NR_SYSCALL_BASE+370)
+#define __NR_open_by_handle_at		(__NR_SYSCALL_BASE+371)
+#define __NR_clock_adjtime		(__NR_SYSCALL_BASE+372)
+#define __NR_syncfs			(__NR_SYSCALL_BASE+373)
+#define __NR_sendmmsg			(__NR_SYSCALL_BASE+374)
+#define __NR_setns			(__NR_SYSCALL_BASE+375)
+#define __NR_process_vm_readv		(__NR_SYSCALL_BASE+376)
+#define __NR_process_vm_writev		(__NR_SYSCALL_BASE+377)
+#define __NR_kcmp			(__NR_SYSCALL_BASE+378)
+#define __NR_finit_module		(__NR_SYSCALL_BASE+379)
+
+/*
+ * This may need to be greater than __NR_last_syscall+1 in order to
+ * account for the padding in the syscall table
+ */
 
 /*
  * The following SWIs are ARM private.
@@ -403,9 +423,15 @@
 #define __ARM_NR_set_tls		(__ARM_NR_BASE+5)
 
 /*
+ * *NOTE*: This is a ghost syscall private to the kernel.  Only the
+ * __kuser_cmpxchg code in entry-armv.S should be aware of its
+ * existence.  Don't ever use this from user code.
+ */
+
+/*
  * The following syscalls are obsolete and no longer available for EABI.
  */
-#if defined(__ARM_EABI__) && !defined(__KERNEL__)
+#if defined(__ARM_EABI__)
 #undef __NR_time
 #undef __NR_umount
 #undef __NR_stime

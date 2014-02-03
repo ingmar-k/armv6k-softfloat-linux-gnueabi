@@ -24,6 +24,7 @@
 #define LINUX_PHONET_H
 
 #include <linux/types.h>
+#include <linux/socket.h>
 
 /* Automatic protocol selection */
 #define PN_PROTO_TRANSPORT	0
@@ -36,8 +37,11 @@
 /* Socket options for SOL_PNPIPE level */
 #define PNPIPE_ENCAP		1
 #define PNPIPE_IFINDEX		2
+#define PNPIPE_HANDLE		3
+#define PNPIPE_INITSTATE	4
 
 #define PNADDR_ANY		0
+#define PNADDR_BROADCAST	0xFC
 #define PNPORT_RESOURCE_ROUTING	0
 
 /* Values for PNPIPE_ENCAP option */
@@ -46,6 +50,9 @@
 
 /* ioctls */
 #define SIOCPNGETOBJECT		(SIOCPROTOPRIVATE + 0)
+#define SIOCPNENABLEPIPE	(SIOCPROTOPRIVATE + 13)
+#define SIOCPNADDRESOURCE	(SIOCPROTOPRIVATE + 14)
+#define SIOCPNDELRESOURCE	(SIOCPROTOPRIVATE + 15)
 
 /* Phonet protocol header */
 struct phonethdr {
@@ -92,12 +99,15 @@ struct phonetmsg {
 
 /* Phonet socket address structure */
 struct sockaddr_pn {
-	sa_family_t spn_family;
+	__kernel_sa_family_t spn_family;
 	__u8 spn_obj;
 	__u8 spn_dev;
 	__u8 spn_resource;
-	__u8 spn_zero[sizeof(struct sockaddr) - sizeof(sa_family_t) - 3];
-} __attribute__ ((packed));
+	__u8 spn_zero[sizeof(struct sockaddr) - sizeof(__kernel_sa_family_t) - 3];
+} __attribute__((packed));
+
+/* Well known address */
+#define PN_DEV_PC	0x10
 
 static __inline__ __u16 pn_object(__u8 addr, __u16 port)
 {
@@ -170,4 +180,6 @@ static __inline__ __u8 pn_sockaddr_get_resource(const struct sockaddr_pn *spn)
 	return spn->spn_resource;
 }
 
-#endif
+/* Phonet device ioctl requests */
+
+#endif /* LINUX_PHONET_H */

@@ -33,6 +33,7 @@ struct signalfd_siginfo {
 	__u64 ssi_utime;
 	__u64 ssi_stime;
 	__u64 ssi_addr;
+	__u16 ssi_addr_lsb;
 
 	/*
 	 * Pad strcture to 128 bytes. Remember to update the
@@ -43,10 +44,9 @@ struct signalfd_siginfo {
 	 * comes out of a read(2) and we really don't want to have
 	 * a compat on read(2).
 	 */
-	__u8 __pad[48];
+	__u8 __pad[46];
 };
 
 
 
 #endif /* _LINUX_SIGNALFD_H */
-

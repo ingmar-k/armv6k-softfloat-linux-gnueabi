@@ -22,7 +22,8 @@
 #  define __SWAB_64_THRU_32__
 #endif
 
-static __inline__ __u32 __arch_swab32(__u32 x)
+
+static __inline__  __u32 __arch_swab32(__u32 x)
 {
 	__u32 t;
 
@@ -46,5 +47,5 @@ static __inline__ __u32 __arch_swab32(__u32 x)
 }
 #define __arch_swab32 __arch_swab32
 
-#endif
 
+#endif /* __ASM_ARM_SWAB_H */

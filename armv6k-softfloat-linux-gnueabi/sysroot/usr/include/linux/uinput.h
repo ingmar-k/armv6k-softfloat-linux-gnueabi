@@ -1,5 +1,3 @@
-#ifndef __UINPUT_H_
-#define __UINPUT_H_
 /*
  *  User level driver support for input subsystem
  *
@@ -31,23 +29,26 @@
  *	0.1	20/06/2002
  *		- first public version
  */
+#ifndef __UINPUT_H_
+#define __UINPUT_H_
 
+#include <linux/types.h>
 #include <linux/input.h>
 
 #define UINPUT_VERSION		3
 
 
 struct uinput_ff_upload {
-	int			request_id;
-	int			retval;
+	__u32			request_id;
+	__s32			retval;
 	struct ff_effect	effect;
 	struct ff_effect	old;
 };
 
 struct uinput_ff_erase {
-	int			request_id;
-	int			retval;
-	int			effect_id;
+	__u32			request_id;
+	__s32			retval;
+	__u32			effect_id;
 };
 
 /* ioctl */
@@ -65,6 +66,7 @@ struct uinput_ff_erase {
 #define UI_SET_FFBIT		_IOW(UINPUT_IOCTL_BASE, 107, int)
 #define UI_SET_PHYS		_IOW(UINPUT_IOCTL_BASE, 108, char*)
 #define UI_SET_SWBIT		_IOW(UINPUT_IOCTL_BASE, 109, int)
+#define UI_SET_PROPBIT		_IOW(UINPUT_IOCTL_BASE, 110, int)
 
 #define UI_BEGIN_FF_UPLOAD	_IOWR(UINPUT_IOCTL_BASE, 200, struct uinput_ff_upload)
 #define UI_END_FF_UPLOAD	_IOW(UINPUT_IOCTL_BASE, 201, struct uinput_ff_upload)
@@ -126,11 +128,10 @@ struct uinput_ff_erase {
 struct uinput_user_dev {
 	char name[UINPUT_MAX_NAME_SIZE];
 	struct input_id id;
-        int ff_effects_max;
-        int absmax[ABS_MAX + 1];
-        int absmin[ABS_MAX + 1];
-        int absfuzz[ABS_MAX + 1];
-        int absflat[ABS_MAX + 1];
+	__u32 ff_effects_max;
+	__s32 absmax[ABS_CNT];
+	__s32 absmin[ABS_CNT];
+	__s32 absfuzz[ABS_CNT];
+	__s32 absflat[ABS_CNT];
 };
-#endif	/* __UINPUT_H_ */
-
+#endif /* __UINPUT_H_ */

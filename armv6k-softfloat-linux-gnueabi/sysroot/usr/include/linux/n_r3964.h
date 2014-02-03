@@ -4,7 +4,6 @@
  * Copyright by
  * Philips Automation Projects
  * Kassel (Germany)
- * http://www.pap-philips.de
  * -----------------------------------------------------------
  * This software may be used and distributed according to the terms of
  * the GNU General Public License, incorporated herein by reference.
@@ -96,4 +95,4 @@ struct r3964_client_message {
 
 
 
-#endif
+#endif /* __LINUX_N_R3964_H__ */

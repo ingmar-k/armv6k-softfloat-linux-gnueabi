@@ -63,4 +63,28 @@ struct vt_consize {
 #define VT_UNLOCKSWITCH 0x560C  /* allow vt switching */
 #define VT_GETHIFONTMASK 0x560D  /* return hi font mask */
 
+struct vt_event {
+	unsigned int event;
+#define VT_EVENT_SWITCH		0x0001	/* Console switch */
+#define VT_EVENT_BLANK		0x0002	/* Screen blank */
+#define VT_EVENT_UNBLANK	0x0004	/* Screen unblank */
+#define VT_EVENT_RESIZE		0x0008	/* Resize display */
+#define VT_MAX_EVENT		0x000F
+	unsigned int oldev;		/* Old console */
+	unsigned int newev;		/* New console (if changing) */
+	unsigned int pad[4];		/* Padding for expansion */
+};
+
+#define VT_WAITEVENT	0x560E	/* Wait for an event */
+
+struct vt_setactivate {
+	unsigned int console;
+	struct vt_mode mode;
+};
+
+#define VT_SETACTIVATE	0x560F	/* Activate and set the mode of a console */
+
+
+#define vt_get_kmsg_redirect() vt_kmsg_redirect(-1)
+
 #endif /* _LINUX_VT_H */

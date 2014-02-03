@@ -20,16 +20,14 @@
  *	the BPF code definitions which need to match so you can share filters
  */
  
-struct sock_filter	/* Filter block */
-{
+struct sock_filter {	/* Filter block */
 	__u16	code;   /* Actual filter code */
 	__u8	jt;	/* Jump true */
 	__u8	jf;	/* Jump false */
 	__u32	k;      /* Generic multiuse field */
 };
 
-struct sock_fprog	/* Required for SO_ATTACH_FILTER. */
-{
+struct sock_fprog {	/* Required for SO_ATTACH_FILTER. */
 	unsigned short		len;	/* Number of filter blocks */
 	struct sock_filter *filter;
 };
@@ -72,6 +70,9 @@ struct sock_fprog	/* Required for SO_ATTACH_FILTER. */
 #define         BPF_LSH         0x60
 #define         BPF_RSH         0x70
 #define         BPF_NEG         0x80
+#define		BPF_MOD		0x90
+#define		BPF_XOR		0xa0
+
 #define         BPF_JA          0x00
 #define         BPF_JEQ         0x10
 #define         BPF_JGT         0x20
@@ -120,7 +121,16 @@ struct sock_fprog	/* Required for SO_ATTACH_FILTER. */
 #define SKF_AD_IFINDEX 	8
 #define SKF_AD_NLATTR	12
 #define SKF_AD_NLATTR_NEST	16
-#define SKF_AD_MAX	20
+#define SKF_AD_MARK 	20
+#define SKF_AD_QUEUE	24
+#define SKF_AD_HATYPE	28
+#define SKF_AD_RXHASH	32
+#define SKF_AD_CPU	36
+#define SKF_AD_ALU_XOR_X	40
+#define SKF_AD_VLAN_TAG	44
+#define SKF_AD_VLAN_TAG_PRESENT 48
+#define SKF_AD_PAY_OFFSET	52
+#define SKF_AD_MAX	56
 #define SKF_NET_OFF   (-0x100000)
 #define SKF_LL_OFF    (-0x200000)
 

@@ -38,6 +38,7 @@
 #define Q_XGETQSTAT	XQM_CMD(5)	/* get quota subsystem status */
 #define Q_XQUOTARM	XQM_CMD(6)	/* free disk space used by dquots */
 #define Q_XQUOTASYNC	XQM_CMD(7)	/* delalloc flush, updates dquots */
+#define Q_XGETQSTATV	XQM_CMD(8)	/* newer version of get quota */
 
 /*
  * fs_disk_quota structure:
@@ -49,7 +50,7 @@
 #define FS_DQUOT_VERSION	1	/* fs_disk_quota.d_version */
 typedef struct fs_disk_quota {
 	__s8		d_version;	/* version of this structure */
-	__s8		d_flags;	/* XFS_{USER,PROJ,GROUP}_QUOTA */
+	__s8		d_flags;	/* FS_{USER,PROJ,GROUP}_QUOTA */
 	__u16		d_fieldmask;	/* field specifier */
 	__u32		d_id;		/* user, project, or group ID */
 	__u64		d_blk_hardlimit;/* absolute limit on disk blks */
@@ -110,18 +111,27 @@ typedef struct fs_disk_quota {
 #define FS_DQ_WARNS_MASK	(FS_DQ_BWARNS | FS_DQ_IWARNS | FS_DQ_RTBWARNS)
 
 /*
- * Various flags related to quotactl(2).  Only relevant to XFS filesystems.
+ * Accounting values.  These can only be set for filesystem with
+ * non-transactional quotas that require quotacheck(8) in userspace.
  */
-#define XFS_QUOTA_UDQ_ACCT	(1<<0)  /* user quota accounting */
-#define XFS_QUOTA_UDQ_ENFD	(1<<1)  /* user quota limits enforcement */
-#define XFS_QUOTA_GDQ_ACCT	(1<<2)  /* group quota accounting */
-#define XFS_QUOTA_GDQ_ENFD	(1<<3)  /* group quota limits enforcement */
-#define XFS_QUOTA_PDQ_ACCT	(1<<4)  /* project quota accounting */
-#define XFS_QUOTA_PDQ_ENFD	(1<<5)  /* project quota limits enforcement */
+#define FS_DQ_BCOUNT		(1<<12)
+#define FS_DQ_ICOUNT		(1<<13)
+#define FS_DQ_RTBCOUNT		(1<<14)
+#define FS_DQ_ACCT_MASK		(FS_DQ_BCOUNT | FS_DQ_ICOUNT | FS_DQ_RTBCOUNT)
 
-#define XFS_USER_QUOTA		(1<<0)	/* user quota type */
-#define XFS_PROJ_QUOTA		(1<<1)	/* project quota type */
-#define XFS_GROUP_QUOTA		(1<<2)	/* group quota type */
+/*
+ * Various flags related to quotactl(2).
+ */
+#define FS_QUOTA_UDQ_ACCT	(1<<0)  /* user quota accounting */
+#define FS_QUOTA_UDQ_ENFD	(1<<1)  /* user quota limits enforcement */
+#define FS_QUOTA_GDQ_ACCT	(1<<2)  /* group quota accounting */
+#define FS_QUOTA_GDQ_ENFD	(1<<3)  /* group quota limits enforcement */
+#define FS_QUOTA_PDQ_ACCT	(1<<4)  /* project quota accounting */
+#define FS_QUOTA_PDQ_ENFD	(1<<5)  /* project quota limits enforcement */
+
+#define FS_USER_QUOTA		(1<<0)	/* user quota type */
+#define FS_PROJ_QUOTA		(1<<1)	/* project quota type */
+#define FS_GROUP_QUOTA		(1<<2)	/* group quota type */
 
 /*
  * fs_quota_stat is the struct returned in Q_XGETQSTAT for a given file system.
@@ -142,7 +152,7 @@ typedef struct fs_qfilestat {
 
 typedef struct fs_quota_stat {
 	__s8		qs_version;	/* version number for future changes */
-	__u16		qs_flags;	/* XFS_QUOTA_{U,P,G}DQ_{ACCT,ENFD} */
+	__u16		qs_flags;	/* FS_QUOTA_{U,P,G}DQ_{ACCT,ENFD} */
 	__s8		qs_pad;		/* unused */
 	fs_qfilestat_t	qs_uquota;	/* user quota storage information */
 	fs_qfilestat_t	qs_gquota;	/* group quota storage information */
@@ -153,5 +163,51 @@ typedef struct fs_quota_stat {
 	__u16		qs_bwarnlimit;	/* limit for num warnings */
 	__u16		qs_iwarnlimit;	/* limit for num warnings */
 } fs_quota_stat_t;
+
+/*
+ * fs_quota_statv is used by Q_XGETQSTATV for a given file system. It provides
+ * a centralized way to get meta information about the quota subsystem. eg.
+ * space taken up for user, group, and project quotas, number of dquots
+ * currently incore.
+ *
+ * This version has proper versioning support with appropriate padding for
+ * future expansions, and ability to expand for future without creating any
+ * backward compatibility issues.
+ *
+ * Q_XGETQSTATV uses the passed in value of the requested version via
+ * fs_quota_statv.qs_version to determine the return data layout of
+ * fs_quota_statv.  The kernel will fill the data fields relevant to that
+ * version.
+ *
+ * If kernel does not support user space caller specified version, EINVAL will
+ * be returned. User space caller can then reduce the version number and retry
+ * the same command.
+ */
+#define FS_QSTATV_VERSION1	1	/* fs_quota_statv.qs_version */
+/*
+ * Some basic information about 'quota files' for Q_XGETQSTATV command
+ */
+struct fs_qfilestatv {
+	__u64		qfs_ino;	/* inode number */
+	__u64		qfs_nblks;	/* number of BBs 512-byte-blks */
+	__u32		qfs_nextents;	/* number of extents */
+	__u32		qfs_pad;	/* pad for 8-byte alignment */
+};
+
+struct fs_quota_statv {
+	__s8			qs_version;	/* version for future changes */
+	__u8			qs_pad1;	/* pad for 16bit alignment */
+	__u16			qs_flags;	/* FS_QUOTA_.* flags */
+	__u32			qs_incoredqs;	/* number of dquots incore */
+	struct fs_qfilestatv	qs_uquota;	/* user quota information */
+	struct fs_qfilestatv	qs_gquota;	/* group quota information */
+	struct fs_qfilestatv	qs_pquota;	/* project quota information */
+	__s32			qs_btimelimit;  /* limit for blks timer */
+	__s32			qs_itimelimit;  /* limit for inodes timer */
+	__s32			qs_rtbtimelimit;/* limit for rt blks timer */
+	__u16			qs_bwarnlimit;	/* limit for num warnings */
+	__u16			qs_iwarnlimit;	/* limit for num warnings */
+	__u64			qs_pad2[8];	/* for future proofing */
+};
 
 #endif	/* _LINUX_DQBLK_XFS_H */

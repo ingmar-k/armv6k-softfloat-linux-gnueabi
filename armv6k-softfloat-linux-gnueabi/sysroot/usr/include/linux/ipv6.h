@@ -21,6 +21,10 @@ struct in6_pktinfo {
 	int		ipi6_ifindex;
 };
 
+struct ip6_mtuinfo {
+	struct sockaddr_in6	ip6m_addr;
+	__u32			ip6m_mtu;
+};
 
 struct in6_ifreq {
 	struct in6_addr	ifr6_addr;
@@ -54,11 +58,13 @@ struct ipv6_opt_hdr {
 	/* 
 	 * TLV encoded option data follows.
 	 */
-} __attribute__ ((packed));	/* required for some archs */
+} __attribute__((packed));	/* required for some archs */
 
 #define ipv6_destopt_hdr ipv6_opt_hdr
 #define ipv6_hopopt_hdr  ipv6_opt_hdr
 
+/* Router Alert option values (RFC2711) */
+#define IPV6_OPT_ROUTERALERT_MLD	0x0000	/* MLD(RFC2710) */
 
 /*
  *	routing header type 0 (used in cmsghdr struct)
@@ -92,7 +98,7 @@ struct ipv6_destopt_hao {
 	__u8			type;
 	__u8			length;
 	struct in6_addr		addr;
-} __attribute__ ((__packed__));
+} __attribute__((packed));
 
 /*
  *	IPv6 fixed header
@@ -152,6 +158,11 @@ enum {
 	DEVCONF_MC_FORWARDING,
 	DEVCONF_DISABLE_IPV6,
 	DEVCONF_ACCEPT_DAD,
+	DEVCONF_FORCE_TLLAO,
+	DEVCONF_NDISC_NOTIFY,
+	DEVCONF_MLDV1_UNSOLICITED_REPORT_INTERVAL,
+	DEVCONF_MLDV2_UNSOLICITED_REPORT_INTERVAL,
+	DEVCONF_SUPPRESS_FRAG_NDISC,
 	DEVCONF_MAX
 };
 

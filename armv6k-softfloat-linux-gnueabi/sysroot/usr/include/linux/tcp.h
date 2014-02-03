@@ -69,17 +69,23 @@ union tcp_word_hdr {
 #define tcp_flag_word(tp) ( ((union tcp_word_hdr *)(tp))->words [3]) 
 
 enum { 
-	TCP_FLAG_CWR = __cpu_to_be32(0x00800000),
-	TCP_FLAG_ECE = __cpu_to_be32(0x00400000),
-	TCP_FLAG_URG = __cpu_to_be32(0x00200000),
-	TCP_FLAG_ACK = __cpu_to_be32(0x00100000),
-	TCP_FLAG_PSH = __cpu_to_be32(0x00080000),
-	TCP_FLAG_RST = __cpu_to_be32(0x00040000),
-	TCP_FLAG_SYN = __cpu_to_be32(0x00020000),
-	TCP_FLAG_FIN = __cpu_to_be32(0x00010000),
-	TCP_RESERVED_BITS = __cpu_to_be32(0x0F000000),
-	TCP_DATA_OFFSET = __cpu_to_be32(0xF0000000)
+	TCP_FLAG_CWR = __constant_cpu_to_be32(0x00800000),
+	TCP_FLAG_ECE = __constant_cpu_to_be32(0x00400000),
+	TCP_FLAG_URG = __constant_cpu_to_be32(0x00200000),
+	TCP_FLAG_ACK = __constant_cpu_to_be32(0x00100000),
+	TCP_FLAG_PSH = __constant_cpu_to_be32(0x00080000),
+	TCP_FLAG_RST = __constant_cpu_to_be32(0x00040000),
+	TCP_FLAG_SYN = __constant_cpu_to_be32(0x00020000),
+	TCP_FLAG_FIN = __constant_cpu_to_be32(0x00010000),
+	TCP_RESERVED_BITS = __constant_cpu_to_be32(0x0F000000),
+	TCP_DATA_OFFSET = __constant_cpu_to_be32(0xF0000000)
 }; 
+
+/*
+ * TCP general constants
+ */
+#define TCP_MSS_DEFAULT		 536U	/* IPv4 (RFC1122, RFC2581) */
+#define TCP_MSS_DESIRED		1220U	/* IPv6 (tunneled), EDNS0 (RFC3226) */
 
 /* TCP socket options */
 #define TCP_NODELAY		1	/* Turn off Nagle's algorithm. */
@@ -96,14 +102,38 @@ enum {
 #define TCP_QUICKACK		12	/* Block/reenable quick acks */
 #define TCP_CONGESTION		13	/* Congestion control algorithm */
 #define TCP_MD5SIG		14	/* TCP MD5 Signature (RFC2385) */
+#define TCP_THIN_LINEAR_TIMEOUTS 16      /* Use linear timeouts for thin streams*/
+#define TCP_THIN_DUPACK         17      /* Fast retrans. after 1 dupack */
+#define TCP_USER_TIMEOUT	18	/* How long for loss retry before timeout */
+#define TCP_REPAIR		19	/* TCP sock is under repair right now */
+#define TCP_REPAIR_QUEUE	20
+#define TCP_QUEUE_SEQ		21
+#define TCP_REPAIR_OPTIONS	22
+#define TCP_FASTOPEN		23	/* Enable FastOpen on listeners */
+#define TCP_TIMESTAMP		24
+#define TCP_NOTSENT_LOWAT	25	/* limit number of unsent bytes in write queue */
 
+struct tcp_repair_opt {
+	__u32	opt_code;
+	__u32	opt_val;
+};
+
+enum {
+	TCP_NO_QUEUE,
+	TCP_RECV_QUEUE,
+	TCP_SEND_QUEUE,
+	TCP_QUEUES_NR,
+};
+
+/* for TCP_INFO socket option */
 #define TCPI_OPT_TIMESTAMPS	1
 #define TCPI_OPT_SACK		2
 #define TCPI_OPT_WSCALE		4
-#define TCPI_OPT_ECN		8
+#define TCPI_OPT_ECN		8 /* ECN was negociated at TCP session init */
+#define TCPI_OPT_ECN_SEEN	16 /* we received at least one packet with ECT */
+#define TCPI_OPT_SYN_DATA	32 /* SYN-ACK acked data in SYN sent or rcvd */
 
-enum tcp_ca_state
-{
+enum tcp_ca_state {
 	TCP_CA_Open = 0,
 #define TCPF_CA_Open	(1<<TCP_CA_Open)
 	TCP_CA_Disorder = 1,
@@ -116,8 +146,7 @@ enum tcp_ca_state
 #define TCPF_CA_Loss	(1<<TCP_CA_Loss)
 };
 
-struct tcp_info
-{
+struct tcp_info {
 	__u8	tcpi_state;
 	__u8	tcpi_ca_state;
 	__u8	tcpi_retransmits;
@@ -170,5 +199,4 @@ struct tcp_md5sig {
 	__u8	tcpm_key[TCP_MD5SIG_MAXKEYLEN];		/* key (binary) */
 };
 
-
-#endif	/* _LINUX_TCP_H */
+#endif /* _LINUX_TCP_H */

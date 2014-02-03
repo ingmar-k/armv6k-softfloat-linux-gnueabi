@@ -1,10 +1,9 @@
 #ifndef _LINUX_ERRQUEUE_H
-#define _LINUX_ERRQUEUE_H 1
+#define _LINUX_ERRQUEUE_H
 
 #include <linux/types.h>
 
-struct sock_extended_err
-{
+struct sock_extended_err {
 	__u32	ee_errno;	
 	__u8	ee_origin;
 	__u8	ee_type;
@@ -18,9 +17,10 @@ struct sock_extended_err
 #define SO_EE_ORIGIN_LOCAL	1
 #define SO_EE_ORIGIN_ICMP	2
 #define SO_EE_ORIGIN_ICMP6	3
-#define SO_EE_ORIGIN_TIMESTAMPING 4
+#define SO_EE_ORIGIN_TXSTATUS	4
+#define SO_EE_ORIGIN_TIMESTAMPING SO_EE_ORIGIN_TXSTATUS
 
 #define SO_EE_OFFENDER(ee)	((struct sockaddr*)((ee)+1))
 
 
-#endif
+#endif /* _LINUX_ERRQUEUE_H */

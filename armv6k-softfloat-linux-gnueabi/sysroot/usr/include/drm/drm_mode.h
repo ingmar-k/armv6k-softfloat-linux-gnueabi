@@ -27,7 +27,6 @@
 #ifndef _DRM_MODE_H
 #define _DRM_MODE_H
 
-#include <linux/kernel.h>
 #include <linux/types.h>
 
 #define DRM_DISPLAY_INFO_LEN	32
@@ -68,21 +67,28 @@
 #define DRM_MODE_DPMS_OFF	3
 
 /* Scaling mode options */
-#define DRM_MODE_SCALE_NON_GPU		0
-#define DRM_MODE_SCALE_FULLSCREEN	1
-#define DRM_MODE_SCALE_NO_SCALE		2
-#define DRM_MODE_SCALE_ASPECT		3
+#define DRM_MODE_SCALE_NONE		0 /* Unmodified timing (display or
+					     software can still scale) */
+#define DRM_MODE_SCALE_FULLSCREEN	1 /* Full screen, ignore aspect */
+#define DRM_MODE_SCALE_CENTER		2 /* Centered, no scaling */
+#define DRM_MODE_SCALE_ASPECT		3 /* Full screen, preserve aspect */
 
 /* Dithering mode options */
 #define DRM_MODE_DITHERING_OFF	0
 #define DRM_MODE_DITHERING_ON	1
+#define DRM_MODE_DITHERING_AUTO 2
+
+/* Dirty info options */
+#define DRM_MODE_DIRTY_OFF      0
+#define DRM_MODE_DIRTY_ON       1
+#define DRM_MODE_DIRTY_ANNOTATE 2
 
 struct drm_mode_modeinfo {
 	__u32 clock;
 	__u16 hdisplay, hsync_start, hsync_end, htotal, hskew;
 	__u16 vdisplay, vsync_start, vsync_end, vtotal, vscan;
 
-	__u32 vrefresh; /* vertical refresh * 1000 */
+	__u32 vrefresh;
 
 	__u32 flags;
 	__u32 type;
@@ -116,11 +122,49 @@ struct drm_mode_crtc {
 	struct drm_mode_modeinfo mode;
 };
 
+#define DRM_MODE_PRESENT_TOP_FIELD	(1<<0)
+#define DRM_MODE_PRESENT_BOTTOM_FIELD	(1<<1)
+
+/* Planes blend with or override other bits on the CRTC */
+struct drm_mode_set_plane {
+	__u32 plane_id;
+	__u32 crtc_id;
+	__u32 fb_id; /* fb object contains surface format type */
+	__u32 flags; /* see above flags */
+
+	/* Signed dest location allows it to be partially off screen */
+	__s32 crtc_x, crtc_y;
+	__u32 crtc_w, crtc_h;
+
+	/* Source values are 16.16 fixed point */
+	__u32 src_x, src_y;
+	__u32 src_h, src_w;
+};
+
+struct drm_mode_get_plane {
+	__u32 plane_id;
+
+	__u32 crtc_id;
+	__u32 fb_id;
+
+	__u32 possible_crtcs;
+	__u32 gamma_size;
+
+	__u32 count_format_types;
+	__u64 format_type_ptr;
+};
+
+struct drm_mode_get_plane_res {
+	__u64 plane_id_ptr;
+	__u32 count_planes;
+};
+
 #define DRM_MODE_ENCODER_NONE	0
 #define DRM_MODE_ENCODER_DAC	1
 #define DRM_MODE_ENCODER_TMDS	2
 #define DRM_MODE_ENCODER_LVDS	3
 #define DRM_MODE_ENCODER_TVDAC	4
+#define DRM_MODE_ENCODER_VIRTUAL 5
 
 struct drm_mode_get_encoder {
 	__u32 encoder_id;
@@ -141,6 +185,7 @@ struct drm_mode_get_encoder {
 #define DRM_MODE_SUBCONNECTOR_Composite	5
 #define DRM_MODE_SUBCONNECTOR_SVIDEO	6
 #define DRM_MODE_SUBCONNECTOR_Component	8
+#define DRM_MODE_SUBCONNECTOR_SCART	9
 
 #define DRM_MODE_CONNECTOR_Unknown	0
 #define DRM_MODE_CONNECTOR_VGA		1
@@ -155,6 +200,9 @@ struct drm_mode_get_encoder {
 #define DRM_MODE_CONNECTOR_DisplayPort	10
 #define DRM_MODE_CONNECTOR_HDMIA	11
 #define DRM_MODE_CONNECTOR_HDMIB	12
+#define DRM_MODE_CONNECTOR_TV		13
+#define DRM_MODE_CONNECTOR_eDP		14
+#define DRM_MODE_CONNECTOR_VIRTUAL      15
 
 struct drm_mode_get_connector {
 
@@ -175,6 +223,8 @@ struct drm_mode_get_connector {
 	__u32 connection;
 	__u32 mm_width, mm_height; /**< HxW in millimeters */
 	__u32 subpixel;
+
+	__u32 pad;
 };
 
 #define DRM_MODE_PROP_PENDING	(1<<0)
@@ -182,6 +232,7 @@ struct drm_mode_get_connector {
 #define DRM_MODE_PROP_IMMUTABLE	(1<<2)
 #define DRM_MODE_PROP_ENUM	(1<<3) /* enumerated type with text strings */
 #define DRM_MODE_PROP_BLOB	(1<<4)
+#define DRM_MODE_PROP_BITMASK	(1<<5) /* bitmask of enumerated types */
 
 struct drm_mode_property_enum {
 	__u64 value;
@@ -206,6 +257,21 @@ struct drm_mode_connector_set_property {
 	__u32 connector_id;
 };
 
+struct drm_mode_obj_get_properties {
+	__u64 props_ptr;
+	__u64 prop_values_ptr;
+	__u32 count_props;
+	__u32 obj_id;
+	__u32 obj_type;
+};
+
+struct drm_mode_obj_set_property {
+	__u64 value;
+	__u32 prop_id;
+	__u32 obj_id;
+	__u32 obj_type;
+};
+
 struct drm_mode_get_blob {
 	__u32 blob_id;
 	__u32 length;
@@ -222,25 +288,94 @@ struct drm_mode_fb_cmd {
 	__u32 handle;
 };
 
+#define DRM_MODE_FB_INTERLACED	(1<<0) /* for interlaced framebuffers */
+
+struct drm_mode_fb_cmd2 {
+	__u32 fb_id;
+	__u32 width, height;
+	__u32 pixel_format; /* fourcc code from drm_fourcc.h */
+	__u32 flags; /* see above flags */
+
+	/*
+	 * In case of planar formats, this ioctl allows up to 4
+	 * buffer objects with offets and pitches per plane.
+	 * The pitch and offset order is dictated by the fourcc,
+	 * e.g. NV12 (http://fourcc.org/yuv.php#NV12) is described as:
+	 *
+	 *   YUV 4:2:0 image with a plane of 8 bit Y samples
+	 *   followed by an interleaved U/V plane containing
+	 *   8 bit 2x2 subsampled colour difference samples.
+	 *
+	 * So it would consist of Y as offset[0] and UV as
+	 * offeset[1].  Note that offset[0] will generally
+	 * be 0.
+	 */
+	__u32 handles[4];
+	__u32 pitches[4]; /* pitch for each plane */
+	__u32 offsets[4]; /* offset of each plane */
+};
+
+#define DRM_MODE_FB_DIRTY_ANNOTATE_COPY 0x01
+#define DRM_MODE_FB_DIRTY_ANNOTATE_FILL 0x02
+#define DRM_MODE_FB_DIRTY_FLAGS         0x03
+
+#define DRM_MODE_FB_DIRTY_MAX_CLIPS     256
+
+/*
+ * Mark a region of a framebuffer as dirty.
+ *
+ * Some hardware does not automatically update display contents
+ * as a hardware or software draw to a framebuffer. This ioctl
+ * allows userspace to tell the kernel and the hardware what
+ * regions of the framebuffer have changed.
+ *
+ * The kernel or hardware is free to update more then just the
+ * region specified by the clip rects. The kernel or hardware
+ * may also delay and/or coalesce several calls to dirty into a
+ * single update.
+ *
+ * Userspace may annotate the updates, the annotates are a
+ * promise made by the caller that the change is either a copy
+ * of pixels or a fill of a single color in the region specified.
+ *
+ * If the DRM_MODE_FB_DIRTY_ANNOTATE_COPY flag is given then
+ * the number of updated regions are half of num_clips given,
+ * where the clip rects are paired in src and dst. The width and
+ * height of each one of the pairs must match.
+ *
+ * If the DRM_MODE_FB_DIRTY_ANNOTATE_FILL flag is given the caller
+ * promises that the region specified of the clip rects is filled
+ * completely with a single color as given in the color argument.
+ */
+
+struct drm_mode_fb_dirty_cmd {
+	__u32 fb_id;
+	__u32 flags;
+	__u32 color;
+	__u32 num_clips;
+	__u64 clips_ptr;
+};
+
 struct drm_mode_mode_cmd {
 	__u32 connector_id;
 	struct drm_mode_modeinfo mode;
 };
 
-#define DRM_MODE_CURSOR_BO	(1<<0)
-#define DRM_MODE_CURSOR_MOVE	(1<<1)
+#define DRM_MODE_CURSOR_BO	0x01
+#define DRM_MODE_CURSOR_MOVE	0x02
+#define DRM_MODE_CURSOR_FLAGS	0x03
 
 /*
- * depending on the value in flags diffrent members are used.
+ * depending on the value in flags different members are used.
  *
  * CURSOR_BO uses
- *    crtc
+ *    crtc_id
  *    width
  *    height
- *    handle - if 0 turns the cursor of
+ *    handle - if 0 turns the cursor off
  *
  * CURSOR_MOVE uses
- *    crtc
+ *    crtc_id
  *    x
  *    y
  */
@@ -255,6 +390,19 @@ struct drm_mode_cursor {
 	__u32 handle;
 };
 
+struct drm_mode_cursor2 {
+	__u32 flags;
+	__u32 crtc_id;
+	__s32 x;
+	__s32 y;
+	__u32 width;
+	__u32 height;
+	/* driver specific handle */
+	__u32 handle;
+	__s32 hot_x;
+	__s32 hot_y;
+};
+
 struct drm_mode_crtc_lut {
 	__u32 crtc_id;
 	__u32 gamma_size;
@@ -263,6 +411,72 @@ struct drm_mode_crtc_lut {
 	__u64 red;
 	__u64 green;
 	__u64 blue;
+};
+
+#define DRM_MODE_PAGE_FLIP_EVENT 0x01
+#define DRM_MODE_PAGE_FLIP_ASYNC 0x02
+#define DRM_MODE_PAGE_FLIP_FLAGS (DRM_MODE_PAGE_FLIP_EVENT|DRM_MODE_PAGE_FLIP_ASYNC)
+
+/*
+ * Request a page flip on the specified crtc.
+ *
+ * This ioctl will ask KMS to schedule a page flip for the specified
+ * crtc.  Once any pending rendering targeting the specified fb (as of
+ * ioctl time) has completed, the crtc will be reprogrammed to display
+ * that fb after the next vertical refresh.  The ioctl returns
+ * immediately, but subsequent rendering to the current fb will block
+ * in the execbuffer ioctl until the page flip happens.  If a page
+ * flip is already pending as the ioctl is called, EBUSY will be
+ * returned.
+ *
+ * Flag DRM_MODE_PAGE_FLIP_EVENT requests that drm sends back a vblank
+ * event (see drm.h: struct drm_event_vblank) when the page flip is
+ * done.  The user_data field passed in with this ioctl will be
+ * returned as the user_data field in the vblank event struct.
+ *
+ * Flag DRM_MODE_PAGE_FLIP_ASYNC requests that the flip happen
+ * 'as soon as possible', meaning that it not delay waiting for vblank.
+ * This may cause tearing on the screen.
+ *
+ * The reserved field must be zero until we figure out something
+ * clever to use it for.
+ */
+
+struct drm_mode_crtc_page_flip {
+	__u32 crtc_id;
+	__u32 fb_id;
+	__u32 flags;
+	__u32 reserved;
+	__u64 user_data;
+};
+
+/* create a dumb scanout buffer */
+struct drm_mode_create_dumb {
+	uint32_t height;
+	uint32_t width;
+	uint32_t bpp;
+	uint32_t flags;
+	/* handle, pitch, size will be returned */
+	uint32_t handle;
+	uint32_t pitch;
+	uint64_t size;
+};
+
+/* set up for mmap of a dumb scanout buffer */
+struct drm_mode_map_dumb {
+	/** Handle for the object being mapped. */
+	__u32 handle;
+	__u32 pad;
+	/**
+	 * Fake offset to use for subsequent mmap call
+	 *
+	 * This is a fixed-size type for 32/64 compatibility.
+	 */
+	__u64 offset;
+};
+
+struct drm_mode_destroy_dumb {
+	uint32_t handle;
 };
 
 #endif

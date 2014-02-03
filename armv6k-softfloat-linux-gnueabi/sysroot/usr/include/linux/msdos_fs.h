@@ -15,13 +15,15 @@
 #define MSDOS_DPB_BITS	4		/* log2(MSDOS_DPB) */
 #define MSDOS_DPS	(SECTOR_SIZE / sizeof(struct msdos_dir_entry))
 #define MSDOS_DPS_BITS	4		/* log2(MSDOS_DPS) */
+#define MSDOS_LONGNAME	256		/* maximum name length */
 #define CF_LE_W(v)	le16_to_cpu(v)
 #define CF_LE_L(v)	le32_to_cpu(v)
 #define CT_LE_W(v)	cpu_to_le16(v)
 #define CT_LE_L(v)	cpu_to_le32(v)
 
+#define MSDOS_ROOT_INO	 1	/* The root inode number */
+#define MSDOS_FSINFO_INO 2	/* Used for managing the FSINFO block */
 
-#define MSDOS_ROOT_INO	1	/* == MINIX_ROOT_INO */
 #define MSDOS_DIR_BITS	5	/* log2(sizeof(struct msdos_dir_entry)) */
 
 /* directory limit */
@@ -47,8 +49,8 @@
 #define DELETED_FLAG	0xe5	/* marks file as deleted when in name[0] */
 #define IS_FREE(n)	(!*(n) || *(n) == DELETED_FLAG)
 
+#define FAT_LFN_LEN	255	/* maximum long name length */
 #define MSDOS_NAME	11	/* maximum name length */
-#define MSDOS_LONGNAME	256	/* maximum name length */
 #define MSDOS_SLOTS	21	/* max # of slots for short and long names */
 #define MSDOS_DOT	".          "	/* ".", padded to MSDOS_NAME chars */
 #define MSDOS_DOTDOT	"..         "	/* "..", padded to MSDOS_NAME chars */
@@ -85,6 +87,8 @@
 #define IS_FSINFO(x)	(le32_to_cpu((x)->signature1) == FAT_FSINFO_SIG1 \
 			 && le32_to_cpu((x)->signature2) == FAT_FSINFO_SIG2)
 
+#define FAT_STATE_DIRTY 0x01
+
 struct __fat_dirent {
 	long		d_ino;
 	__kernel_off_t	d_off;
@@ -100,6 +104,8 @@ struct __fat_dirent {
 /* <linux/videotext.h> has used 0x72 ('r') in collision, so skip a few */
 #define FAT_IOCTL_GET_ATTRIBUTES	_IOR('r', 0x10, __u32)
 #define FAT_IOCTL_SET_ATTRIBUTES	_IOW('r', 0x11, __u32)
+/*Android kernel has used 0x12, so we use 0x13*/
+#define FAT_IOCTL_GET_VOLUME_ID		_IOR('r', 0x13, __u32)
 
 struct fat_boot_sector {
 	__u8	ignored[3];	/* Boot strap short or near jump */
@@ -118,14 +124,42 @@ struct fat_boot_sector {
 	__le32	hidden;		/* hidden sectors (unused) */
 	__le32	total_sect;	/* number of sectors (if sectors == 0) */
 
-	/* The following fields are only used by FAT32 */
-	__le32	fat32_length;	/* sectors/FAT */
-	__le16	flags;		/* bit 8: fat mirroring, low 4: active fat */
-	__u8	version[2];	/* major, minor filesystem version */
-	__le32	root_cluster;	/* first cluster in root directory */
-	__le16	info_sector;	/* filesystem info sector */
-	__le16	backup_boot;	/* backup boot sector */
-	__le16	reserved2[6];	/* Unused */
+	union {
+		struct {
+			/*  Extended BPB Fields for FAT16 */
+			__u8	drive_number;	/* Physical drive number */
+			__u8	state;		/* undocumented, but used
+						   for mount state. */
+			__u8	signature;  /* extended boot signature */
+			__u8	vol_id[4];	/* volume ID */
+			__u8	vol_label[11];	/* volume label */
+			__u8	fs_type[8];		/* file system type */
+			/* other fiealds are not added here */
+		} fat16;
+
+		struct {
+			/* only used by FAT32 */
+			__le32	length;		/* sectors/FAT */
+			__le16	flags;		/* bit 8: fat mirroring,
+						   low 4: active fat */
+			__u8	version[2];	/* major, minor filesystem
+						   version */
+			__le32	root_cluster;	/* first cluster in
+						   root directory */
+			__le16	info_sector;	/* filesystem info sector */
+			__le16	backup_boot;	/* backup boot sector */
+			__le16	reserved2[6];	/* Unused */
+			/* Extended BPB Fields for FAT32 */
+			__u8	drive_number;   /* Physical drive number */
+			__u8    state;       	/* undocumented, but used
+						   for mount state. */
+			__u8	signature;  /* extended boot signature */
+			__u8	vol_id[4];	/* volume ID */
+			__u8	vol_label[11];	/* volume label */
+			__u8	fs_type[8];		/* file system type */
+			/* other fiealds are not added here */
+		} fat32;
+	};
 };
 
 struct fat_boot_fsinfo {
@@ -162,4 +196,4 @@ struct msdos_dir_slot {
 	__u8    name11_12[4];	/* last 2 characters in name */
 };
 
-#endif /* !_LINUX_MSDOS_FS_H */
+#endif /* _LINUX_MSDOS_FS_H */

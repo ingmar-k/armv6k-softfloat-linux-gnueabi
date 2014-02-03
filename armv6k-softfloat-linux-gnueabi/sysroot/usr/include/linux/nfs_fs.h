@@ -33,9 +33,8 @@
 #define FLUSH_STABLE		4	/* commit to stable storage */
 #define FLUSH_LOWPRI		8	/* low priority background flush */
 #define FLUSH_HIGHPRI		16	/* high priority memory reclaim flush */
-#define FLUSH_NOCOMMIT		32	/* Don't send the NFSv3/v4 COMMIT */
-#define FLUSH_INVALIDATE	64	/* Invalidate the page cache */
-#define FLUSH_NOWRITEPAGE	128	/* Don't call writepage() */
+#define FLUSH_COND_STABLE	32	/* conditional stable write - only stable
+					 * if everything fits in one RPC */
 
 
 /*
@@ -53,7 +52,10 @@
 #define NFSDBG_CLIENT		0x0200
 #define NFSDBG_MOUNT		0x0400
 #define NFSDBG_FSCACHE		0x0800
+#define NFSDBG_PNFS		0x1000
+#define NFSDBG_PNFS_LD		0x2000
+#define NFSDBG_STATE		0x4000
 #define NFSDBG_ALL		0xFFFF
 
 
-#endif
+#endif /* _LINUX_NFS_FS_H */
